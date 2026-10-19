@@ -59,6 +59,8 @@ public class ClinicalEventTimeExtractor {
                     periodStart("effectivePeriod"), field("issued"), periodEnd("effectivePeriod"))),
             Map.entry(ResourceType.Encounter, List.of(
                     periodStart("period"), periodEnd("period"))),
+            Map.entry(ResourceType.EpisodeOfCare, List.of(
+                    periodStart("period"), periodEnd("period"))),
             Map.entry(ResourceType.Procedure, List.of(
                     field("performedDateTime"), periodStart("performedPeriod"), periodEnd("performedPeriod"))),
             Map.entry(ResourceType.Immunization, List.of(
@@ -78,7 +80,9 @@ public class ClinicalEventTimeExtractor {
             Map.entry(ResourceType.Consent, List.of(
                     field("dateTime"))),
             Map.entry(ResourceType.DiagnosticReport, List.of(
-                    field("effectiveDateTime"), field("issued"), periodEnd("effectivePeriod")))
+                    field("effectiveDateTime"), field("issued"), periodEnd("effectivePeriod"))),
+            Map.entry(ResourceType.Composition, List.of(
+                    field("date")))
     );
 
     private final MeterRegistry meterRegistry;

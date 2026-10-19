@@ -164,6 +164,25 @@ class ClinicalEventTimeExtractorTest {
         }
 
         @Test
+        void episodeOfCare_usesPeriodStart() {
+            JsonNode data = json("""
+                    { "resourceType": "EpisodeOfCare",
+                      "period": { "start": "2026-10-08T07:51:30Z", "end": "2026-10-12T07:40:29Z" } }
+                    """);
+            assertEquals(OffsetDateTime.of(2026, 10, 8, 7, 51, 30, 0, ZoneOffset.UTC),
+                    extractor.extract(ResourceType.EpisodeOfCare, data));
+        }
+
+        @Test
+        void composition_date() {
+            JsonNode data = json("""
+                    { "resourceType": "Composition", "date": "2026-10-08T14:10:50+03:00" }
+                    """);
+            assertEquals(OffsetDateTime.of(2026, 10, 8, 11, 10, 50, 0, ZoneOffset.UTC),
+                    extractor.extract(ResourceType.Composition, data));
+        }
+
+        @Test
         void allergyIntolerance_prefersOnsetOverRecordedDate() {
             JsonNode data = json("""
                     { "resourceType": "AllergyIntolerance",
