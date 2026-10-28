@@ -10,12 +10,6 @@ on:
   push:
     # Same pattern the services build on, so each release line rebuilds its own images
     branches: [ "release-*" ]
-    # Only changes that alter the built library; docs and Sonar config rebuild nothing
-    paths:
-      - "src/main/**"
-      - "build.gradle"
-      - "settings.gradle"
-      - "gradle/**"
   workflow_dispatch:
 
 # A second push while the services are still building supersedes the first: their builds read this
