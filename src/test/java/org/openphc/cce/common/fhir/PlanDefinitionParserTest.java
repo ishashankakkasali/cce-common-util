@@ -600,6 +600,8 @@ class PlanDefinitionParserTest {
         PlanDefinitionParser.IntelligenceActionInfo action1 = bpAction.intelligenceActions().get(0);
         assertEquals("bp-high-alert", action1.actionId());
         assertEquals("High BP Alert Action", action1.title());
+        assertEquals("alert", action1.category());
+        assertEquals(List.of("practitioner"), action1.participantTypes());
         assertEquals("text/jsonlogic", action1.conditionLanguage());
         assertEquals("{\">\": [{\"var\": \"systolic\"}, 140]}", action1.conditionExpression());
         assertEquals("http://openphc.org/ActivityDefinition/high-bp-alert|1.0.0", action1.definitionCanonical());
@@ -612,6 +614,57 @@ class PlanDefinitionParserTest {
         assertEquals("http://openphc.org/ActivityDefinition/bp-critical-escalation|1.0.0", action2.definitionCanonical());
         assertEquals("CRITICAL", action2.severity());
         assertEquals("SUPERVISOR", action2.intelligenceDestination());
+        // No communication-category code declared
+        assertNull(action2.category());
+        // No participant declared
+        assertEquals(List.of(), action2.participantTypes());
+    }
+
+    @Test
+    void extractActions_intelligenceActionWithUnknownCategory_throwsIllegalArgument() {
+        String json = intelligenceActionWithCode(
+                "{\"system\": \"http://terminology.hl7.org/CodeSystem/communication-category\", \"code\": \"pager\"}");
+        PlanDefinition pd = parser.parse(json);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> parser.extractSteps(pd));
+        assertTrue(ex.getMessage().contains("communication category 'pager'"));
+    }
+
+    @Test
+    void extractActions_intelligenceActionCodeInOtherSystem_isNotACategory() {
+        String json = intelligenceActionWithCode(
+                "{\"system\": \"http://example.org/CodeSystem/local\", \"code\": \"pager\"}");
+        PlanDefinition pd = parser.parse(json);
+        assertNull(parser.extractSteps(pd).get(0).intelligenceActions().get(0).category());
+    }
+
+    /** A one-step PlanDefinition whose single intelligence action carries the given coding as its code. */
+    private static String intelligenceActionWithCode(String coding) {
+        return """
+                {
+                  "resourceType": "PlanDefinition",
+                  "id": "test-category",
+                  "url": "http://test.org/PlanDefinition/category",
+                  "version": "1.0",
+                  "status": "active",
+                  "action": [{
+                    "id": "step-1",
+                    "type": {"coding": [{"system": "http://openphc.org/fhir/CodeSystem/action-type", "code": "step"}]},
+                    "trigger": [{"type": "named-event", "name": "test"}],
+                    "action": [{
+                      "id": "intel-action-1",
+                      "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/action-type", "code": "fire-event"}]},
+                      "code": [{"coding": [%s]}],
+                      "condition": [{"kind": "applicability", "expression": {"language": "text/jsonlogic", "expression": "{\\"==\\": [1, 1]}"}}],
+                      "definitionCanonical": "ActivityDefinition/test|1.0",
+                      "extension": [
+                        {"url": "http://openphc.org/fhir/StructureDefinition/intelligence-severity", "valueCode": "HIGH"},
+                        {"url": "http://openphc.org/fhir/StructureDefinition/intelligence-destination", "valueCode": "SUPERVISOR"}
+                      ]
+                    }]
+                  }]
+                }
+                """.formatted(coding);
     }
 
     @Test

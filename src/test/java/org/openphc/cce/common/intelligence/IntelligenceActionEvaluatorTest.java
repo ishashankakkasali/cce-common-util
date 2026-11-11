@@ -125,6 +125,8 @@ class IntelligenceActionEvaluatorTest {
             // What the destination needs to tell this alert apart: which action, its text, and why it fired
             assertEquals("bp-high-alert", event.getIntelligenceActionId());
             assertEquals("Title of bp-high-alert", event.getTitle());
+            assertEquals("reminder", event.getCategory());
+            assertEquals(List.of("patient"), event.getParticipantTypes());
             assertEquals("missed", event.getTriggerReason());
 
             // Deviation.intelligenceEventId set
@@ -580,7 +582,8 @@ class IntelligenceActionEvaluatorTest {
     private PlanDefinitionParser.IntelligenceActionInfo buildIntelligenceAction(
             String actionId, String language, String expression, String canonical) {
         return new PlanDefinitionParser.IntelligenceActionInfo(
-                actionId, language, expression, canonical, null, null, "Title of " + actionId);
+                actionId, language, expression, canonical, null, null, "Title of " + actionId, "reminder",
+                List.of("patient"));
     }
 
     private void mockParserReturnsIntelligenceActions(StepInstance step,

@@ -997,6 +997,30 @@ Values sourced from FHIR R4 `ActivityDefinition.kind` ([RequestResourceType](htt
 
 The `intelligence_destination` field on `intelligence_event_log` is a **free-form string** (not a constrained enum). It represents the routing destination for the Intelligence Service to deliver the action (e.g., `openMRS`, `SPICE`, `E-Buzima`). Values are extracted from the **required** PlanDefinition extension `http://openphc.org/fhir/StructureDefinition/intelligence-destination` at parse time. PlanDefinitions missing this extension on intelligence actions are rejected.
 
+### Communication Category
+
+An intelligence action may say what kind of communication it sends with its standard FHIR `code`, in the HL7 CodeSystem `http://terminology.hl7.org/CodeSystem/communication-category`: `alert`, `notification`, `reminder` or `instruction`. It is optional. The parser reads it into `IntelligenceActionInfo.category` and the evaluator carries it on `IntelligenceTriggerEvent.category`, which the Intelligence Service uses as the CommunicationRequest `category`. Codings in other systems are ignored; an unknown code in this system is rejected at parse time, like a missing `intelligence-severity`.
+
+```json
+{
+  "id": "viral-load-missed-alert",
+  "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/action-type", "code": "fire-event" }] },
+  "title": "Viral load missed: alert the clinician",
+  "code": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/communication-category", "code": "alert" }] }],
+  "...": "condition, definitionCanonical, intelligence-severity and intelligence-destination as above"
+}
+```
+
+The category belongs on the PlanDefinition action, not on the ActivityDefinition: one ActivityDefinition can back several actions that send different kinds of communication (a reminder to the patient and an alert to a clinician for the same overdue step).
+
+### Participant (who the action is for)
+
+An intelligence action may say who it is for with the standard FHIR `participant.type`: `patient`, `practitioner`, `related-person` or `device` (the FHIR parser rejects any other code). It is optional. The parser reads it into `IntelligenceActionInfo.participantTypes` and the evaluator carries it on `IntelligenceTriggerEvent.participantTypes` (left out when empty). When it includes `patient`, the Intelligence Service sets the CommunicationRequest `recipient` to the subject patient; any other recipient depends on the patient (e.g. their own clinic) and is left to the receiving system.
+
+```json
+"participant": [{ "type": "patient" }]
+```
+
 ---
 
 ## 14. Relationships & Foreign Keys
@@ -1135,6 +1159,8 @@ The `event_payload` column stores the complete `IntelligenceTriggerEvent` publis
   "actionId": "viral-load-check",
   "intelligenceActionId": "viral-load-missed-alert",
   "title": "Viral load missed: alert the clinician",
+  "category": "alert",
+  "participantTypes": ["practitioner"],
   "triggerReason": "missed",
   "protocolCanonical": "http://example.org/PlanDefinition/hiv-treatment|1.0",
   "detectedAt": "2026-03-25T00:00:05Z",
@@ -1143,7 +1169,7 @@ The `event_payload` column stores the complete `IntelligenceTriggerEvent` publis
 ```
 
 `actionId` is the step; `intelligenceActionId` and `title` are the intelligence action that fired (its
-PlanDefinition `id` and `title`); `triggerReason` matches the row's `trigger_reason` — `completion`, or
+PlanDefinition `id` and `title`); `category` is the action's communication category and `participantTypes` who it is for, each absent when the action declares none; `triggerReason` matches the row's `trigger_reason` — `completion`, or
 the lowercase deviation type. These let a destination tell its alerts apart without reading CCE's
 tables.
 

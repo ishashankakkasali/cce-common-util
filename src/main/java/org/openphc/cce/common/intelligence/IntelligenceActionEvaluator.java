@@ -210,6 +210,10 @@ public class IntelligenceActionEvaluator {
                     .actionId(step.getActionId())
                     .intelligenceActionId(action.actionId())
                     .title(action.title())
+                    .category(action.category())
+                    // Left out of the event (NON_NULL) when the action declares no participant
+                    .participantTypes(action.participantTypes() == null || action.participantTypes().isEmpty()
+                            ? null : action.participantTypes())
                     .triggerReason(triggerReason)
                     // Derived rather than stored: protocol_instance no longer denormalizes it.
                     .protocolCanonical(protocol.getProtocolDefinition().getCanonical())

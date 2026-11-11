@@ -2,7 +2,9 @@ package org.openphc.cce.common.fhir;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.*;
+import org.hl7.fhir.r4.model.codesystems.CommunicationCategory;
 import org.openphc.cce.common.enums.PlanDefinitionActionType;
 import org.openphc.cce.common.enums.CycleBoundary;
 import org.openphc.cce.common.support.RequiredBehavior;
@@ -1181,8 +1183,53 @@ public class PlanDefinitionParser {
                 definitionCanonical,
                 severity,
                 intelligenceDestination,
-                intelligenceAction.hasTitle() ? intelligenceAction.getTitle() : null
+                intelligenceAction.hasTitle() ? intelligenceAction.getTitle() : null,
+                extractCommunicationCategory(intelligenceAction),
+                extractParticipantTypes(intelligenceAction)
         );
+    }
+
+    /**
+     * The kind of communication the action sends, from its {@code code} in the HL7
+     * communication-category CodeSystem (alert, notification, reminder, instruction), or null when the
+     * action declares none. The CodeSystem and its codes come from HAPI's R4 {@link CommunicationCategory}.
+     * Codings in other systems are ignored; an unknown code in this system is an authoring error and is
+     * rejected, like a missing severity.
+     */
+    private static String extractCommunicationCategory(PlanDefinition.PlanDefinitionActionComponent action) {
+        String system = CommunicationCategory.ALERT.getSystem();
+        for (CodeableConcept code : action.getCode()) {
+            for (Coding coding : code.getCoding()) {
+                if (!system.equals(coding.getSystem())) continue;
+                CommunicationCategory category = null;
+                try {
+                    category = coding.hasCode() ? CommunicationCategory.fromCode(coding.getCode()) : null;
+                } catch (FHIRException unknown) {
+                    // reported below
+                }
+                if (category == null || category == CommunicationCategory.NULL) {
+                    throw new IllegalArgumentException(
+                            "Intelligence action '" + action.getId() + "' has an unknown communication category '"
+                                    + coding.getCode() + "' (expected one of alert, notification, reminder, instruction"
+                                    + " in " + system + ")");
+                }
+                return category.toCode();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Who the action is for, from its {@code participant.type} (R4: patient, practitioner,
+     * related-person, device), in declaration order; empty when it declares none. The FHIR parser has
+     * already rejected any other code.
+     */
+    private static List<String> extractParticipantTypes(PlanDefinition.PlanDefinitionActionComponent action) {
+        return action.getParticipant().stream()
+                .filter(PlanDefinition.PlanDefinitionActionParticipantComponent::hasType)
+                .map(participant -> participant.getType().toCode())
+                .distinct()
+                .toList();
     }
 
     private Integer extractToleranceDays(PlanDefinition.PlanDefinitionActionComponent action) {
@@ -1397,6 +1444,10 @@ public class PlanDefinitionParser {
      *
      * @param title the action's own title — the human-readable text of what the action does — or null
      *              when it has none. Carried to the destination as the alert's text.
+     * @param category the kind of communication (alert, notification, reminder, instruction) from the
+     *              action's code in the HL7 communication-category CodeSystem, or null when it declares none.
+     * @param participantTypes who the action is for, from its {@code participant.type} (patient,
+     *              practitioner, related-person, device); empty when it declares none.
      */
     public record IntelligenceActionInfo(
             String actionId,
@@ -1405,7 +1456,9 @@ public class PlanDefinitionParser {
             String definitionCanonical,
             String severity,
             String intelligenceDestination,
-            String title
+            String title,
+            String category,
+            List<String> participantTypes
     ) {}
 
 
