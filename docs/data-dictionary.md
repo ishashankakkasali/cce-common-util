@@ -1133,11 +1133,19 @@ The `event_payload` column stores the complete `IntelligenceTriggerEvent` publis
   "stepStatus": "not-started",
   "slaStatus": "missed",
   "actionId": "viral-load-check",
+  "intelligenceActionId": "viral-load-missed-alert",
+  "title": "Viral load missed: alert the clinician",
+  "triggerReason": "missed",
   "protocolCanonical": "http://example.org/PlanDefinition/hiv-treatment|1.0",
   "detectedAt": "2026-03-25T00:00:05Z",
   "eventPayload": { "resourceType": "ServiceRequest", "id": "498871", "..." : "..." }
 }
 ```
+
+`actionId` is the step; `intelligenceActionId` and `title` are the intelligence action that fired (its
+PlanDefinition `id` and `title`); `triggerReason` matches the row's `trigger_reason` — `completion`, or
+the lowercase deviation type. These let a destination tell its alerts apart without reading CCE's
+tables.
 
 > **Note:** The `intelligenceEventId` field in the event payload maps to the `intelligence_event_log.id` (the row's primary key). The `eventPayload` field contains the original FHIR resource from the inbound CloudEvent — present for event-driven completions, `null` for the deviation path.
 

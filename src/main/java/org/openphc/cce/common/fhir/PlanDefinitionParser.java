@@ -1180,7 +1180,8 @@ public class PlanDefinitionParser {
                 condExpression,
                 definitionCanonical,
                 severity,
-                intelligenceDestination
+                intelligenceDestination,
+                intelligenceAction.hasTitle() ? intelligenceAction.getTitle() : null
         );
     }
 
@@ -1391,13 +1392,20 @@ public class PlanDefinitionParser {
             String conditionExpression
     ) {}
 
+    /**
+     * A fire-event action nested under a step.
+     *
+     * @param title the action's own title — the human-readable text of what the action does — or null
+     *              when it has none. Carried to the destination as the alert's text.
+     */
     public record IntelligenceActionInfo(
             String actionId,
             String conditionLanguage,
             String conditionExpression,
             String definitionCanonical,
             String severity,
-            String intelligenceDestination
+            String intelligenceDestination,
+            String title
     ) {}
 
 

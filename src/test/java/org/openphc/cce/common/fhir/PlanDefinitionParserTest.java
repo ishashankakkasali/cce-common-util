@@ -599,6 +599,7 @@ class PlanDefinitionParserTest {
 
         PlanDefinitionParser.IntelligenceActionInfo action1 = bpAction.intelligenceActions().get(0);
         assertEquals("bp-high-alert", action1.actionId());
+        assertEquals("High BP Alert Action", action1.title());
         assertEquals("text/jsonlogic", action1.conditionLanguage());
         assertEquals("{\">\": [{\"var\": \"systolic\"}, 140]}", action1.conditionExpression());
         assertEquals("http://openphc.org/ActivityDefinition/high-bp-alert|1.0.0", action1.definitionCanonical());

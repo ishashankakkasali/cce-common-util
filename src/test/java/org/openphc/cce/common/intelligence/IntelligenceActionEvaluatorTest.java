@@ -122,6 +122,10 @@ class IntelligenceActionEvaluatorTest {
             assertEquals("not-started", event.getStepStatus());
             assertEquals("overdue", event.getSlaStatus());
             assertEquals("bp-check", event.getActionId());
+            // What the destination needs to tell this alert apart: which action, its text, and why it fired
+            assertEquals("bp-high-alert", event.getIntelligenceActionId());
+            assertEquals("Title of bp-high-alert", event.getTitle());
+            assertEquals("missed", event.getTriggerReason());
 
             // Deviation.intelligenceEventId set
             verify(deviationRepository).save(deviation);
@@ -291,6 +295,13 @@ class IntelligenceActionEvaluatorTest {
             assertEquals("completion", eventLog.getTriggerReason());
             assertEquals("late-notify", eventLog.getStepActionId());
             assertNull(eventLog.getDeviationId());
+
+            // The published event says why it fired
+            ArgumentCaptor<IntelligenceTriggerEvent> eventCaptor =
+                    ArgumentCaptor.forClass(IntelligenceTriggerEvent.class);
+            verify(intelligenceTriggerProducer).publishAndConfirm(eventCaptor.capture());
+            assertEquals("late-notify", eventCaptor.getValue().getIntelligenceActionId());
+            assertEquals("completion", eventCaptor.getValue().getTriggerReason());
 
             // No deviation to update
             verify(deviationRepository, never()).save(any());
@@ -569,7 +580,7 @@ class IntelligenceActionEvaluatorTest {
     private PlanDefinitionParser.IntelligenceActionInfo buildIntelligenceAction(
             String actionId, String language, String expression, String canonical) {
         return new PlanDefinitionParser.IntelligenceActionInfo(
-                actionId, language, expression, canonical, null, null);
+                actionId, language, expression, canonical, null, null, "Title of " + actionId);
     }
 
     private void mockParserReturnsIntelligenceActions(StepInstance step,

@@ -208,6 +208,9 @@ public class IntelligenceActionEvaluator {
                     // Null while no threshold has fallen due, and for a step with no SLA at all.
                     .slaStatus(slaStatusCode(step))
                     .actionId(step.getActionId())
+                    .intelligenceActionId(action.actionId())
+                    .title(action.title())
+                    .triggerReason(triggerReason)
                     // Derived rather than stored: protocol_instance no longer denormalizes it.
                     .protocolCanonical(protocol.getProtocolDefinition().getCanonical())
                     .detectedAt(OffsetDateTime.now(ZoneOffset.UTC))

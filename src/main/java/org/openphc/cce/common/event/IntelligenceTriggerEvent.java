@@ -30,7 +30,14 @@ public class IntelligenceTriggerEvent {
     private String stepStatus;
 
     private String slaStatus;
+    /** The step the intelligence action sits under (e.g. "follow-up-visit"). */
     private String actionId;
+    /** The intelligence action that fired (e.g. "follow-up-visit-overdue-alert"). */
+    private String intelligenceActionId;
+    /** The intelligence action's title from the PlanDefinition, when it has one. */
+    private String title;
+    /** Why it fired: "completion", or the lowercase deviation type ("overdue", "missed", "order_violation"). */
+    private String triggerReason;
     private String protocolCanonical;
     private OffsetDateTime detectedAt;
     private JsonNode eventPayload;
